@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>DemoWebApp</AssemblyName>
+    <Product>Demo Web App</Product>
+    <Version>1.0.0</Version>
+    <UserSecretsId>f9a92ea9-5b10-4208-85bc-f6c3f407f499</UserSecretsId>
+  </PropertyGroup>
+
+
+</Project>

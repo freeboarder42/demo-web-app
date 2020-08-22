@@ -1,0 +1,69 @@
+# ASP.NET Core (.NET Framework)
+# Build and test ASP.NET Core projects targeting the full .NET Framework.
+# Add steps that publish symbols, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+# Trigger the pipeline only if the master branched was pushed
+trigger:
+- master
+
+# Defines which agent pool is to be used. An agent runs the pipeline. If many developers work on
+# a project, defininng more than one agent is recommended to improve the build performance.
+# See https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/agents and
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/pools-queues
+pool:
+  vmImage: 'windows-latest'
+
+# Variables used later in the YAML file
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+# The steps of the pipeline. Contains tasks that have a name and a version in the form name@version.
+# Tasks are described here: https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/?view=azure-devops
+steps:
+# This task finds, downloads, and caches a specified version of NuGet and add it to the PATH.
+# See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/tool/nuget
+- task: NuGetToolInstaller@1
+
+# This task installs and updates all NuGet packages.
+# See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/package/nuget
+- task: NuGetCommand@2	
+  inputs:
+    restoreSolution: '$(solution)'
+
+# This task runs MSBuild to build the app.
+# See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/build/visual-studio-build
+- task: VSBuild@1
+  inputs:
+    solution: '$(solution)'
+    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+# This task runs unit and functional tests (Selenium, Appium, Coded UI test, and more) using the Visual Studio Test Runner. 
+# See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/test/vstes
+- task: VSTest@2
+  inputs:
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+# This tasks runs the Dotnet Core CLI to build, test, package, or publish a dotnet application, or to run a custom dotnet command.
+# Here it publishes the build of the app to the folder stored in $(Build.ArtifactStagingDirectory).
+# See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/build/dotnet-core-cli
+- task: DotNetCoreCLI@2
+  inputs:
+    command: publish
+    publishWebProjects: True
+    arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+    zipAfterPublish: True
+
+# This tasks publishes build artifacts to Azure Pipelines, TFS, or a file share.
+# Here it publishes the build stored in $(Build.ArtifactStagingDirectory) as an artifact
+# for later deployment.
+# See https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/utility/publish-build-artifacts
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+    artifactName: 'demo-website'
